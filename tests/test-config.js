@@ -1,16 +1,20 @@
-const fs = require('fs')
-const os = require('os')
-const path = require('path')
+const fs = require('bare-fs')
+const os = require('bare-os')
+const path = require('bare-path')
 const sinon = require('sinon')
 const t = require('tap')
+const bareEnv = require('bare-env')
 
 const dotenv = require('../lib/main')
-
 let logStub
+
+// Use this:
+const originalTTY = global.__DOTENV_TEST_TTY
+global.__DOTENV_TEST_TTY = undefined
 
 t.beforeEach(() => {
   logStub = null
-  delete process.env.BASIC // reset
+  delete bareEnv.BASIC // reset
 })
 
 t.afterEach(() => {
@@ -22,7 +26,7 @@ t.test('takes string for path option', ct => {
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, 'basic')
+  ct.equal(env.BASIC, 'basic')
 
   ct.end()
 })
@@ -32,7 +36,7 @@ t.test('takes array for path option', ct => {
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, 'basic')
+  ct.equal(env.BASIC, 'basic')
 
   ct.end()
 })
@@ -42,41 +46,41 @@ t.test('takes two or more files in the array for path option', ct => {
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(process.env.BASIC, 'local_basic')
+  ct.equal(env.BASIC, 'local_basic')
 
   ct.end()
 })
 
 t.test('sets values from both .env.local and .env. first file key wins.', ct => {
-  delete process.env.SINGLE_QUOTES
+  delete bareEnv.SINGLE_QUOTES
 
   const testPath = ['tests/.env.local', 'tests/.env']
   const env = dotenv.config({ path: testPath })
 
   // in both files - first file wins (.env.local)
   ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(process.env.BASIC, 'local_basic')
+  ct.equal(env.BASIC, 'local_basic')
 
   // in .env.local only
   ct.equal(env.parsed.LOCAL, 'local')
-  ct.equal(process.env.LOCAL, 'local')
+  ct.equal(env.LOCAL, 'local')
 
   // in .env only
   ct.equal(env.parsed.SINGLE_QUOTES, 'single_quotes')
-  ct.equal(process.env.SINGLE_QUOTES, 'single_quotes')
+  ct.equal(env.SINGLE_QUOTES, 'single_quotes')
 
   ct.end()
 })
 
-t.test('sets values from both .env.local and .env. but none is used as value existed in process.env.', ct => {
+t.test('sets values from both .env.local and .env. but none is used as value existed in env.', ct => {
   const testPath = ['tests/.env.local', 'tests/.env']
-  process.env.BASIC = 'existing'
+  bareEnv.BASIC = 'existing'
 
   const env = dotenv.config({ path: testPath })
 
-  // does not override process.env
+  // does not override env
   ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(process.env.BASIC, 'existing')
+  ct.equal(env.BASIC, 'existing')
 
   ct.end()
 })
@@ -88,7 +92,7 @@ t.test('takes URL for path option', ct => {
   const env = dotenv.config({ path: fileUrl })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, 'basic')
+  ct.equal(env.BASIC, 'basic')
 
   ct.end()
 })
@@ -128,7 +132,7 @@ t.test('takes option for debug', ct => {
   ct.end()
 })
 
-t.test('reads path with encoding, parsing output to process.env', ct => {
+t.test('reads path with encoding, parsing output to env', ct => {
   const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('BASIC=basic')
   const parseStub = sinon.stub(dotenv, 'parse').returns({ BASIC: 'basic' })
 
@@ -143,63 +147,63 @@ t.test('reads path with encoding, parsing output to process.env', ct => {
   ct.end()
 })
 
-t.test('does not write over keys already in process.env', ct => {
+t.test('does not write over keys already in env', ct => {
   const testPath = 'tests/.env'
   const existing = 'bar'
-  process.env.BASIC = existing
+  bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, existing)
+  ct.equal(env.BASIC, existing)
 
   ct.end()
 })
 
-t.test('does write over keys already in process.env if override turned on', ct => {
+t.test('does write over keys already in env if override turned on', ct => {
   const testPath = 'tests/.env'
   const existing = 'bar'
-  process.env.BASIC = existing
+  bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath, override: true })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, 'basic')
+  ct.equal(env.BASIC, 'basic')
 
   ct.end()
 })
 
-t.test('does not write over keys already in process.env if the key has a falsy value', ct => {
+t.test('does not write over keys already in env if the key has a falsy value', ct => {
   const testPath = 'tests/.env'
   const existing = ''
-  process.env.BASIC = existing
+  bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, '')
+  ct.equal(env.BASIC, '')
 
   ct.end()
 })
 
-t.test('does write over keys already in process.env if the key has a falsy value but override is set to true', ct => {
+t.test('does write over keys already in env if the key has a falsy value but override is set to true', ct => {
   const testPath = 'tests/.env'
   const existing = ''
-  process.env.BASIC = existing
+  bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath, override: true })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(process.env.BASIC, 'basic')
+  ct.equal(env.BASIC, 'basic')
   ct.end()
 })
 
-t.test('can write to a different object rather than process.env', ct => {
+t.test('can write to a different object rather than env', ct => {
   const testPath = 'tests/.env'
-  process.env.BASIC = 'other' // reset process.env
+  bareEnv.BASIC = 'other' // reset env
 
   const myObject = {}
   const env = dotenv.config({ path: testPath, processEnv: myObject })
 
   ct.equal(env.parsed.BASIC, 'basic')
-  console.log('logging', process.env.BASIC)
-  ct.equal(process.env.BASIC, 'other')
+  console.log('logging', env.BASIC)
+  ct.equal(env.BASIC, 'other')
   ct.equal(myObject.BASIC, 'basic')
 
   ct.end()
@@ -260,7 +264,7 @@ t.test('deals with file:// path', ct => {
   const env = dotenv.config({ path: testPath })
 
   ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(process.env.BASIC, undefined)
+  ct.equal(env.BASIC, undefined)
   ct.equal(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
   ct.ok(logStub.called)
@@ -275,7 +279,7 @@ t.test('deals with file:// path and debug true', ct => {
   const env = dotenv.config({ path: testPath, debug: true })
 
   ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(process.env.BASIC, undefined)
+  ct.equal(env.BASIC, undefined)
   ct.equal(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
   ct.ok(logStub.called)
@@ -291,7 +295,7 @@ t.test('path.relative fails somehow', ct => {
   const env = dotenv.config({ path: testPath, debug: true })
 
   ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(process.env.BASIC, undefined)
+  ct.equal(env.BASIC, undefined)
   ct.equal(env.error.message, 'fail')
 
   ct.ok(logStub.called)
@@ -304,8 +308,11 @@ t.test('path.relative fails somehow', ct => {
 t.test('displays random tips from the tips array', ct => {
   ct.plan(2)
 
-  const originalTTY = process.stdout.isTTY
-  process.stdout.isTTY = true
+  if (originalTTY !== undefined) {
+    global.__DOTENV_TEST_TTY = originalTTY
+  } else {
+    delete global.__DOTENV_TEST_TTY
+  }
 
   logStub = sinon.stub(console, 'log')
   const testPath = 'tests/.env'
@@ -356,17 +363,17 @@ t.test('displays random tips from the tips array', ct => {
   }
 
   ct.ok(foundExpectedTip, 'Should display one of the expected tips')
-
-  // Restore
-  process.stdout.isTTY = originalTTY
   ct.end()
 })
 
 t.test('displays random tips from the tips array with fallback for isTTY false', ct => {
   ct.plan(2)
 
-  const originalTTY = process.stdout.isTTY
-  process.stdout.isTTY = undefined
+  if (originalTTY !== undefined) {
+    global.__DOTENV_TEST_TTY = originalTTY
+  } else {
+    delete global.__DOTENV_TEST_TTY
+  }
 
   logStub = sinon.stub(console, 'log')
   const testPath = 'tests/.env'
@@ -415,8 +422,6 @@ t.test('displays random tips from the tips array with fallback for isTTY false',
 
   ct.ok(foundExpectedTip, 'Should display one of the expected tips')
 
-  // Restore
-  process.stdout.isTTY = originalTTY
   ct.end()
 })
 
@@ -449,16 +454,16 @@ t.test('does not log if quiet flag passed true', ct => {
   ct.ok(logStub.notCalled)
 })
 
-t.test('does not log if process.env.DOTENV_CONFIG_QUIET is true', ct => {
+t.test('does not log if env.DOTENV_CONFIG_QUIET is true', ct => {
   ct.plan(1)
 
-  process.env.DOTENV_CONFIG_QUIET = 'true'
+  bareEnv.DOTENV_CONFIG_QUIET = 'true'
   const testPath = 'tests/.env'
   logStub = sinon.stub(console, 'log')
 
   dotenv.config({ path: testPath })
   ct.ok(logStub.notCalled)
-  delete process.env.DOTENV_CONFIG_QUIET
+  delete bareEnv.DOTENV_CONFIG_QUIET
 })
 
 t.test('does log if quiet flag false', ct => {
@@ -471,16 +476,16 @@ t.test('does log if quiet flag false', ct => {
   ct.ok(logStub.called)
 })
 
-t.test('does log if process.env.DOTENV_CONFIG_QUIET is false', ct => {
+t.test('does log if env.DOTENV_CONFIG_QUIET is false', ct => {
   ct.plan(1)
 
-  process.env.DOTENV_CONFIG_QUIET = 'false'
+  bareEnv.DOTENV_CONFIG_QUIET = 'false'
   const testPath = 'tests/.env'
   logStub = sinon.stub(console, 'log')
 
   dotenv.config({ path: testPath })
   ct.ok(logStub.called)
-  delete process.env.DOTENV_CONFIG_QUIET
+  delete bareEnv.DOTENV_CONFIG_QUIET
 })
 
 t.test('does log if quiet flag present and undefined/null', ct => {

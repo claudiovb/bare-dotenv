@@ -1,5 +1,5 @@
-const fs = require('fs')
-
+const fs = require('bare-fs')
+const env = require('bare-env')
 const sinon = require('sinon')
 const t = require('tap')
 
@@ -35,12 +35,12 @@ t.test('does not write over keys already in processEnv', ct => {
 
   const existing = 'bar'
   const parsed = { test: 'test' }
-  process.env.test = existing
+  env.test = existing
 
   // 'test' returned as value in `beforeEach`. should keep this 'bar'
-  dotenv.populate(process.env, parsed)
+  dotenv.populate(env, parsed)
 
-  ct.equal(process.env.test, existing)
+  ct.equal(env.test, existing)
 })
 
 t.test('does write over keys already in processEnv if override turned on', ct => {
@@ -48,12 +48,12 @@ t.test('does write over keys already in processEnv if override turned on', ct =>
 
   const existing = 'bar'
   const parsed = { test: 'test' }
-  process.env.test = existing
+  env.test = existing
 
   // 'test' returned as value in `beforeEach`. should change this 'bar' to 'test'
-  dotenv.populate(process.env, parsed, { override: true })
+  dotenv.populate(env, parsed, { override: true })
 
-  ct.equal(process.env.test, parsed.test)
+  ct.equal(env.test, parsed.test)
 })
 
 t.test('logs any errors populating when in debug mode but override turned off', ct => {
@@ -62,11 +62,11 @@ t.test('logs any errors populating when in debug mode but override turned off', 
   const logStub = sinon.stub(console, 'log')
 
   const parsed = { test: false }
-  process.env.test = true
+  env.test = true
 
-  dotenv.populate(process.env, parsed, { debug: true })
+  dotenv.populate(env, parsed, { debug: true })
 
-  ct.not(process.env.test, parsed.test)
+  ct.not(env.test, parsed.test)
   ct.ok(logStub.called)
 
   logStub.restore()
@@ -78,11 +78,11 @@ t.test('logs populating when debug mode and override turned on', ct => {
   const logStub = sinon.stub(console, 'log')
 
   const parsed = { test: false }
-  process.env.test = true
+  env.test = true
 
-  dotenv.populate(process.env, parsed, { debug: true, override: true })
+  dotenv.populate(env, parsed, { debug: true, override: true })
 
-  console.log('process', process.env.test, parsed.test)
+  console.log('process', env.test, parsed.test)
 
   ct.ok(logStub.called)
 
@@ -93,7 +93,7 @@ t.test('returns any errors thrown on passing not json type', ct => {
   ct.plan(1)
 
   try {
-    dotenv.populate(process.env, '')
+    dotenv.populate(env, '')
   } catch (e) {
     ct.equal(e.message, 'OBJECT_REQUIRED: Please check the processEnv argument being passed to populate')
   }

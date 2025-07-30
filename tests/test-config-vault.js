@@ -1,7 +1,8 @@
-const fs = require('fs')
-const crypto = require('crypto')
+const fs = require('bare-fs')
+const crypto = require('bare-crypto')
 const sinon = require('sinon')
 const t = require('tap')
+const env = require('bare-env')
 
 const dotenv = require('../lib/main')
 
@@ -13,8 +14,8 @@ let envStub
 let logStub
 
 t.beforeEach(() => {
-  process.env.DOTENV_KEY = ''
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value(dotenvKey)
+  env.DOTENV_KEY = ''
+  envStub = sinon.stub(env, 'DOTENV_KEY').value(dotenvKey)
 })
 
 t.afterEach(() => {
@@ -141,7 +142,7 @@ t.test('throws missing data when somehow parsed badly', ct => {
 
 t.test('throws error when invalid formed DOTENV_KEY', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('invalid-format-non-uri-format')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('invalid-format-non-uri-format')
 
   ct.plan(2)
 
@@ -175,7 +176,7 @@ t.test('throws error when invalid formed DOTENV_KEY that otherwise is not caught
 
 t.test('throws error when DOTENV_KEY missing password', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('dotenv://username@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://username@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -191,7 +192,7 @@ t.test('throws error when DOTENV_KEY missing password', ct => {
 
 t.test('throws error when DOTENV_KEY missing environment', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault')
 
   ct.plan(2)
 
@@ -207,7 +208,7 @@ t.test('throws error when DOTENV_KEY missing environment', ct => {
 
 t.test('when DOTENV_KEY is empty string falls back to .env file', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('')
 
   ct.plan(1)
 
@@ -217,48 +218,48 @@ t.test('when DOTENV_KEY is empty string falls back to .env file', ct => {
   ct.end()
 })
 
-t.test('does not write over keys already in process.env by default', ct => {
+t.test('does not write over keys already in env by default', ct => {
   ct.plan(2)
 
   const existing = 'bar'
-  process.env.ALPHA = existing
+  env.ALPHA = existing
 
   const result = dotenv.config({ path: testPath })
 
   ct.equal(result.parsed.ALPHA, 'zeta')
-  ct.equal(process.env.ALPHA, 'bar')
+  ct.equal(env.ALPHA, 'bar')
 })
 
-t.test('does write over keys already in process.env if override turned on', ct => {
+t.test('does write over keys already in env if override turned on', ct => {
   ct.plan(2)
 
   const existing = 'bar'
-  process.env.ALPHA = existing
+  env.ALPHA = existing
 
   const result = dotenv.config({ path: testPath, override: true })
 
   ct.equal(result.parsed.ALPHA, 'zeta')
-  ct.equal(process.env.ALPHA, 'zeta')
+  ct.equal(env.ALPHA, 'zeta')
 })
 
 t.test('when DOTENV_KEY is passed as an option it successfully decrypts and injects', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('')
 
   ct.plan(2)
 
   const result = dotenv.config({ path: testPath, DOTENV_KEY: dotenvKey })
 
   ct.equal(result.parsed.ALPHA, 'zeta')
-  ct.equal(process.env.ALPHA, 'zeta')
+  ct.equal(env.ALPHA, 'zeta')
 
   ct.end()
 })
 
-t.test('can write to a different object rather than process.env', ct => {
+t.test('can write to a different object rather than env', ct => {
   ct.plan(3)
 
-  process.env.ALPHA = 'other' // reset process.env
+  env.ALPHA = 'other' // reset env
 
   logStub = sinon.stub(console, 'log')
 
@@ -266,7 +267,7 @@ t.test('can write to a different object rather than process.env', ct => {
 
   const result = dotenv.config({ path: testPath, processEnv: myObject })
   ct.equal(result.parsed.ALPHA, 'zeta')
-  ct.equal(process.env.ALPHA, 'other')
+  ct.equal(env.ALPHA, 'other')
   ct.equal(myObject.ALPHA, 'zeta')
 })
 
@@ -292,7 +293,7 @@ t.test('logs when debug is on and override is false', ct => {
 
 t.test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -308,7 +309,7 @@ t.test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
 
 t.test('raises an DECRYPTION_FAILED if key fails to decrypt payload', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -324,7 +325,7 @@ t.test('raises an DECRYPTION_FAILED if key fails to decrypt payload', ct => {
 
 t.test('raises an DECRYPTION_FAILED if both (comma separated) keys fail to decrypt', ct => {
   envStub.restore()
-  envStub = sinon.stub(process.env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development,dotenv://:key_c04959b64473e43dd60c56a536ef8481388528b16759736d89515c25eec69247@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development,dotenv://:key_c04959b64473e43dd60c56a536ef8481388528b16759736d89515c25eec69247@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 

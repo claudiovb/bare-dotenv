@@ -5,12 +5,13 @@ const decache = require('decache')
 require('../lib/env-options')
 
 // preserve existing env
-const e = process.env.DOTENV_CONFIG_ENCODING
-const p = process.env.DOTENV_CONFIG_PATH
-const q = process.env.DOTENV_CONFIG_QUIET
-const d = process.env.DOTENV_CONFIG_DEBUG
-const o = process.env.DOTENV_CONFIG_OVERRIDE
-const dk = process.env.DOTENV_CONFIG_DOTENV_KEY
+const env = require('bare-env')
+const e = env.DOTENV_CONFIG_ENCODING
+const p = env.DOTENV_CONFIG_PATH
+const q = env.DOTENV_CONFIG_QUIET
+const d = env.DOTENV_CONFIG_DEBUG
+const o = env.DOTENV_CONFIG_OVERRIDE
+const dk = env.DOTENV_CONFIG_DOTENV_KEY
 
 // get fresh object for each test
 function options () {
@@ -19,21 +20,20 @@ function options () {
 }
 
 function testOption (envVar, tmpVal, expect) {
-  delete process.env[envVar]
-  process.env[envVar] = tmpVal
+  delete env[envVar]
+  env[envVar] = tmpVal
 
   t.same(options(), expect)
 
-  delete process.env[envVar]
+  delete env[envVar]
 }
 
 // returns empty object when no options set in process.env
-delete process.env.DOTENV_CONFIG_ENCODING
-delete process.env.DOTENV_CONFIG_PATH
-delete process.env.DOTENV_CONFIG_QUIET
-delete process.env.DOTENV_CONFIG_DEBUG
-delete process.env.DOTENV_CONFIG_OVERRIDE
-delete process.env.DOTENV_CONFIG_DOTENV_KEY
+delete env.DOTENV_CONFIG_ENCODING
+delete env.DOTENV_CONFIG_PATH
+delete env.DOTENV_CONFIG_QUIET
+delete env.DOTENV_CONFIG_DEBUG
+delete env.DOTENV_CONFIG_OVERRIDE
 
 t.same(options(), {})
 
