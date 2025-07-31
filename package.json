@@ -57,7 +57,11 @@
     "os": "npm:bare-node-os@^1.0.1",
     "process": "npm:bare-node-process@^1.0.1",
     "tty": "npm:bare-node-tty@^1.0.1",
-    "util": "npm:bare-node-util@^1.0.0"
+    "util": "npm:bare-node-util@^1.0.0",
+    "supports-color": "file:./shims/supports-color"
+  },
+  "overrides": {
+    "supports-color": "file:./shims/supports-color"
   },
   "devDependencies": {
     "@types/node": "^18.11.3",
