@@ -10,10 +10,26 @@ const testPath = 'tests/.env'
 
 const dotenvKey = 'dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault?environment=development'
 
-test('does log when testPath calls to .env.vault directly (interpret what the user meant)', ct => {
+// Create a reusable test factory for vault tests
+function vaultTest (name, testFn) {
+  test(name, (t) => {
+    // Setup (your beforeEach equivalent)
+    env.DOTENV_KEY = ''
+    const envStub = stub(env, 'DOTENV_KEY').value(dotenvKey)
+
+    // Run the actual test, passing the stub for tests that might need it
+    testFn(t, { envStub })
+
+    // Cleanup (your afterEach equivalent)
+    t.teardown(() => {
+      envStub.restore()
+    })
+  })
+}
+vaultTest('does log when testPath calls to .env.vault directly (interpret what the user meant)', (ct, { envStub }) => {
   ct.plan(1)
 
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: `${testPath}.vault` })
   ct.ok(logStub.called)
@@ -23,7 +39,7 @@ test('warns if DOTENV_KEY exists but .env.vault does not exist', ct => {
   ct.plan(1)
 
   const testPath = 'tests/.env'
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   const existsSync = stub(fs, 'existsSync').returns(false) // make .env.vault not exist
   dotenv.config({ path: testPath })
@@ -37,7 +53,7 @@ test('warns if DOTENV_KEY exists but .env.vault does not exist (set as array)', 
   ct.plan(1)
 
   const testPath = 'tests/.env'
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   const existsSync = stub(fs, 'existsSync').returns(false) // make .env.vault not exist
   dotenv.config({ path: [testPath] })
@@ -50,7 +66,7 @@ test('warns if DOTENV_KEY exists but .env.vault does not exist (set as array)', 
 test('logs when testPath calls to .env.vault directly (interpret what the user meant) and debug true', ct => {
   ct.plan(1)
 
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: `${testPath}.vault`, debug: true })
   ct.ok(logStub.called)
@@ -59,8 +75,8 @@ test('logs when testPath calls to .env.vault directly (interpret what the user m
 test('returns parsed object', ct => {
   ct.plan(1)
 
-  const env = dotenv.config({ path: testPath })
-  ct.same(env.parsed, { ALPHA: 'zeta' })
+  const bareEnv = dotenv.config({ path: testPath })
+  ct.same(bareEnv.parsed, { ALPHA: 'zeta' })
 
   ct.end()
 })
@@ -68,8 +84,8 @@ test('returns parsed object', ct => {
 test('returns parsed object (set path as array)', ct => {
   ct.plan(1)
 
-  const env = dotenv.config({ path: [testPath] })
-  ct.same(env.parsed, { ALPHA: 'zeta' })
+  const bareEnv = dotenv.config({ path: [testPath] })
+  ct.same(bareEnv.parsed, { ALPHA: 'zeta' })
 
   ct.end()
 })
@@ -77,8 +93,8 @@ test('returns parsed object (set path as array)', ct => {
 test('returns parsed object (set path as mulit-array)', ct => {
   ct.plan(1)
 
-  const env = dotenv.config({ path: ['tests/.env.local', 'tests/.env'] })
-  ct.same(env.parsed, { ALPHA: 'zeta' })
+  const bareEnv = dotenv.config({ path: ['tests/.env.local', 'tests/.env'] })
+  ct.same(bareEnv.parsed, { ALPHA: 'zeta' })
 
   ct.end()
 })
@@ -86,8 +102,8 @@ test('returns parsed object (set path as mulit-array)', ct => {
 test('returns parsed object (set path as array with .vault extension)', ct => {
   ct.plan(1)
 
-  const env = dotenv.config({ path: [`${testPath}.vault`] })
-  ct.same(env.parsed, { ALPHA: 'zeta' })
+  const bareEnv = dotenv.config({ path: [`${testPath}.vault`] })
+  ct.same(bareEnv.parsed, { ALPHA: 'zeta' })
 
   ct.end()
 })
@@ -124,7 +140,7 @@ test('throws missing data when somehow parsed badly', ct => {
   ct.end()
 })
 
-test('throws error when invalid formed DOTENV_KEY', ct => {
+vaultTest('throws error when invalid formed DOTENV_KEY', (ct, { envStub }) => {
   envStub.restore()
   envStub = stub(env, 'DOTENV_KEY').value('invalid-format-non-uri-format')
 
@@ -245,8 +261,6 @@ test('can write to a different object rather than env', ct => {
 
   env.ALPHA = 'other' // reset env
 
-  logStub = stub(console, 'log')
-
   const myObject = {}
 
   const result = dotenv.config({ path: testPath, processEnv: myObject })
@@ -258,7 +272,7 @@ test('can write to a different object rather than env', ct => {
 test('logs when debug and override are turned on', ct => {
   ct.plan(1)
 
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, override: true, debug: true })
 
@@ -268,7 +282,7 @@ test('logs when debug and override are turned on', ct => {
 test('logs when debug is on and override is false', ct => {
   ct.plan(1)
 
-  logStub = stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, override: false, debug: true })
 
@@ -276,6 +290,7 @@ test('logs when debug is on and override is false', ct => {
 })
 
 test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
+  console.log('envStub', envStub)
   envStub.restore()
   envStub = stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development')
 

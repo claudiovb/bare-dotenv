@@ -17,3 +17,7 @@ const dbHost: string = parsed["DB_HOST"];
 
 const parsedFromBuffer = parse(Buffer.from("JUSTICE=league\n"));
 const justice: string = parsedFromBuffer["JUSTICE"];
+// Mark variables as used for type checking
+void dbUrl;
+void dbHost;
+void justice;

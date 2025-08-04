@@ -79,11 +79,24 @@ class StubHelper {
     if (replacement) {
       object[property] = replacement
     } else {
-      // Create the stub function
-      const stubFunction = (...args) => stub._stubFunction(...args)
-      Object.setPrototypeOf(stubFunction, stub)
-      Object.assign(stubFunction, stub)
-      object[property] = stubFunction
+      // Check if this is the env object by trying to set a function value
+      // bare-env will throw an error if we try to set a function
+      try {
+        // Create the stub function for regular objects
+        const stubFunction = (...args) => stub._stubFunction(...args)
+        Object.setPrototypeOf(stubFunction, stub)
+        Object.assign(stubFunction, stub)
+        object[property] = stubFunction
+      } catch (e) {
+        // If setting a function fails, this is likely the env object
+        // We'll set the actual value when .value() is called
+        if (e.message && e.message.includes('must be of type string, number, or boolean')) {
+          // This is the env object, do nothing here - value will be set by .value()
+        } else {
+          // Some other error, re-throw it
+          throw e
+        }
+      }
     }
 
     this.stubs.push(stub)
