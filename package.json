@@ -22,10 +22,10 @@
     "dts-check": "tsc --project tests/types/tsconfig.json",
     "lint": "standard",
     "pretest": "npm run lint && npm run dts-check",
-    "test": "bare tap run --allow-empty-coverage --disable-coverage --timeout=60000",
+    "test": "brittle-bare tests/test-*.js",
     "test:basic": "bare tests/test-config.js",
     "test:env": "bare tests/test-env-options.js",
-    "test:coverage": "tap run --show-full-coverage --timeout=60000 --coverage-report=text --coverage-report=lcov",
+    "test:coverage": "brittle-bare tests/test-*.js",
     "prerelease": "npm test",
     "release": "standard-version"
   },
@@ -57,19 +57,14 @@
     "os": "npm:bare-node-os@^1.0.1",
     "process": "npm:bare-node-process@^1.0.1",
     "tty": "npm:bare-node-tty@^1.0.1",
-    "util": "npm:bare-node-util@^1.0.0",
-    "supports-color": "file:./shims/supports-color"
-  },
-  "overrides": {
-    "supports-color": "file:./shims/supports-color"
+    "util": "npm:bare-node-util@^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^18.11.3",
+    "brittle": "^3.6.0",
     "decache": "^4.6.2",
-    "sinon": "^14.0.1",
     "standard": "^17.0.0",
     "standard-version": "^9.5.0",
-    "tap": "^19.2.0",
     "typescript": "^4.8.4"
   },
   "engines": {

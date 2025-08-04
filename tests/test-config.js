@@ -1,312 +1,363 @@
 const fs = require('bare-fs')
 const os = require('bare-os')
 const path = require('bare-path')
-const sinon = require('sinon')
-const t = require('tap')
+const test = require('brittle')
+const { stub } = require('./test-stub')
 const bareEnv = require('bare-env')
 
 const dotenv = require('../lib/main')
-let logStub
 
 // Use this:
 const originalTTY = global.__DOTENV_TEST_TTY
 global.__DOTENV_TEST_TTY = undefined
 
-t.beforeEach(() => {
-  logStub = null
+test('takes string for path option', function (t) {
   delete bareEnv.BASIC // reset
-})
 
-t.afterEach(() => {
-  if (logStub) logStub.restore()
-})
-
-t.test('takes string for path option', ct => {
   const testPath = 'tests/.env'
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, 'basic')
-
-  ct.end()
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, 'basic')
 })
 
-t.test('takes array for path option', ct => {
+test('takes array for path option', function (t) {
+  delete bareEnv.BASIC // reset
+
   const testPath = ['tests/.env']
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, 'basic')
-
-  ct.end()
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, 'basic')
 })
 
-t.test('takes two or more files in the array for path option', ct => {
+test('takes two or more files in the array for path option', function (t) {
+  delete bareEnv.BASIC // reset
+
   const testPath = ['tests/.env.local', 'tests/.env']
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(env.BASIC, 'local_basic')
-
-  ct.end()
+  t.is(env.parsed.BASIC, 'local_basic')
+  t.is(env.BASIC, 'local_basic')
 })
 
-t.test('sets values from both .env.local and .env. first file key wins.', ct => {
+test('sets values from both .env.local and .env. first file key wins.', function (t) {
+  delete bareEnv.BASIC // reset
   delete bareEnv.SINGLE_QUOTES
 
   const testPath = ['tests/.env.local', 'tests/.env']
   const env = dotenv.config({ path: testPath })
 
   // in both files - first file wins (.env.local)
-  ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(env.BASIC, 'local_basic')
+  t.is(env.parsed.BASIC, 'local_basic')
+  t.is(env.BASIC, 'local_basic')
 
   // in .env.local only
-  ct.equal(env.parsed.LOCAL, 'local')
-  ct.equal(env.LOCAL, 'local')
+  t.is(env.parsed.LOCAL, 'local')
+  t.is(env.LOCAL, 'local')
 
   // in .env only
-  ct.equal(env.parsed.SINGLE_QUOTES, 'single_quotes')
-  ct.equal(env.SINGLE_QUOTES, 'single_quotes')
-
-  ct.end()
+  t.is(env.parsed.SINGLE_QUOTES, 'single_quotes')
+  t.is(env.SINGLE_QUOTES, 'single_quotes')
 })
 
-t.test('sets values from both .env.local and .env. but none is used as value existed in env.', ct => {
+test('sets values from both .env.local and .env. but none is used as value existed in env.', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = ['tests/.env.local', 'tests/.env']
   bareEnv.BASIC = 'existing'
 
   const env = dotenv.config({ path: testPath })
 
   // does not override env
-  ct.equal(env.parsed.BASIC, 'local_basic')
-  ct.equal(env.BASIC, 'existing')
+  t.is(env.parsed.BASIC, 'local_basic')
+  t.is(env.BASIC, 'existing')
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('takes URL for path option', ct => {
+test('takes URL for path option', function (t) {
+  delete bareEnv.BASIC // reset
+
   const envPath = path.resolve(__dirname, '.env')
   const fileUrl = new URL(`file://${envPath}`)
 
   const env = dotenv.config({ path: fileUrl })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, 'basic')
-
-  ct.end()
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, 'basic')
 })
 
-t.test('takes option for path along with home directory char ~', ct => {
-  const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('test=foo')
+test('takes option for path along with home directory char ~', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const readFileSyncStub = stub(fs, 'readFileSync').returns('test=foo')
   const mockedHomedir = '/Users/dummy'
-  const homedirStub = sinon.stub(os, 'homedir').returns(mockedHomedir)
+  const homedirStub = stub(os, 'homedir').returns(mockedHomedir)
   const testPath = '~/.env'
   dotenv.config({ path: testPath })
 
-  ct.equal(readFileSyncStub.args[0][0], path.join(mockedHomedir, '.env'))
-  ct.ok(homedirStub.called)
+  t.is(readFileSyncStub.calls[0].args[0], path.join(mockedHomedir, '.env'))
+  t.ok(homedirStub.called)
 
   homedirStub.restore()
   readFileSyncStub.restore()
-  ct.end()
 })
 
-t.test('takes option for encoding', ct => {
-  const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('test=foo')
+test('takes option for encoding', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const readFileSyncStub = stub(fs, 'readFileSync').returns('test=foo')
 
   const testEncoding = 'latin1'
   dotenv.config({ encoding: testEncoding })
-  ct.equal(readFileSyncStub.args[0][1].encoding, testEncoding)
+  t.is(readFileSyncStub.calls[0].args[1].encoding, testEncoding)
 
   readFileSyncStub.restore()
-  ct.end()
 })
 
-t.test('takes option for debug', ct => {
-  logStub = sinon.stub(console, 'log')
+test('takes option for debug', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const logStub = stub(console, 'log')
 
   dotenv.config({ debug: 'true' })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
 
-  ct.end()
+  logStub.restore()
 })
 
-t.test('reads path with encoding, parsing output to env', ct => {
-  const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('BASIC=basic')
-  const parseStub = sinon.stub(dotenv, 'parse').returns({ BASIC: 'basic' })
+test('reads path with encoding, parsing output to env', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const readFileSyncStub = stub(fs, 'readFileSync').returns('BASIC=basic')
+  const parseStub = stub(dotenv, 'parse').returns({ BASIC: 'basic' })
 
   const res = dotenv.config()
 
-  ct.same(res.parsed, { BASIC: 'basic' })
-  ct.equal(readFileSyncStub.callCount, 1)
+  t.alike(res.parsed, { BASIC: 'basic' })
+  t.is(readFileSyncStub.callCount, 1)
 
   readFileSyncStub.restore()
   parseStub.restore()
-
-  ct.end()
 })
 
-t.test('does not write over keys already in env', ct => {
+test('does not write over keys already in env', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   const existing = 'bar'
   bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, existing)
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, existing)
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('does write over keys already in env if override turned on', ct => {
+test('does write over keys already in env if override turned on', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   const existing = 'bar'
   bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath, override: true })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, 'basic')
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, 'basic')
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('does not write over keys already in env if the key has a falsy value', ct => {
+test('does not write over keys already in env if the key has a falsy value', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   const existing = ''
   bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, '')
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, '')
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('does write over keys already in env if the key has a falsy value but override is set to true', ct => {
+test('does write over keys already in env if the key has a falsy value but override is set to true', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   const existing = ''
   bareEnv.BASIC = existing
   const env = dotenv.config({ path: testPath, override: true })
 
-  ct.equal(env.parsed.BASIC, 'basic')
-  ct.equal(env.BASIC, 'basic')
-  ct.end()
+  t.is(env.parsed.BASIC, 'basic')
+  t.is(env.BASIC, 'basic')
+
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('can write to a different object rather than env', ct => {
+test('can write to a different object rather than env', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   bareEnv.BASIC = 'other' // reset env
 
   const myObject = {}
   const env = dotenv.config({ path: testPath, processEnv: myObject })
 
-  ct.equal(env.parsed.BASIC, 'basic')
+  t.is(env.parsed.BASIC, 'basic')
   console.log('logging', env.BASIC)
-  ct.equal(env.BASIC, 'other')
-  ct.equal(myObject.BASIC, 'basic')
+  t.is(env.BASIC, 'other')
+  t.is(myObject.BASIC, 'basic')
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('returns parsed object', ct => {
+test('returns parsed object', function (t) {
+  const originalBasic = bareEnv.BASIC
+  delete bareEnv.BASIC // reset
+
   const testPath = 'tests/.env'
   const env = dotenv.config({ path: testPath })
 
-  ct.notOk(env.error)
-  ct.equal(env.parsed.BASIC, 'basic')
+  t.absent(env.error)
+  t.is(env.parsed.BASIC, 'basic')
 
-  ct.end()
+  // restore
+  delete bareEnv.BASIC
+  if (originalBasic !== undefined) {
+    bareEnv.BASIC = originalBasic
+  }
 })
 
-t.test('returns any errors thrown from reading file or parsing', ct => {
-  const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('test=foo')
+test('returns any errors thrown from reading file or parsing', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const readFileSyncStub = stub(fs, 'readFileSync').returns('test=foo')
 
   readFileSyncStub.throws()
   const env = dotenv.config()
 
-  ct.type(env.error, Error)
+  t.ok(env.error instanceof Error)
 
   readFileSyncStub.restore()
-
-  ct.end()
 })
 
-t.test('logs any errors thrown from reading file or parsing when in debug mode', ct => {
-  ct.plan(2)
+test('logs any errors thrown from reading file or parsing when in debug mode', function (t) {
+  delete bareEnv.BASIC // reset
 
-  logStub = sinon.stub(console, 'log')
-  const readFileSyncStub = sinon.stub(fs, 'readFileSync').returns('test=foo')
+  const logStub = stub(console, 'log')
+  const readFileSyncStub = stub(fs, 'readFileSync').returns('test=foo')
 
   readFileSyncStub.throws()
   const env = dotenv.config({ debug: true })
 
-  ct.ok(logStub.called)
-  ct.type(env.error, Error)
+  t.ok(logStub.called)
+  t.ok(env.error instanceof Error)
 
   readFileSyncStub.restore()
+  logStub.restore()
 })
 
-t.test('logs any errors parsing when in debug and override mode', ct => {
-  ct.plan(1)
+test('logs any errors parsing when in debug and override mode', function (t) {
+  delete bareEnv.BASIC // reset
 
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ debug: true, override: true })
 
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })
 
-t.test('deals with file:// path', ct => {
-  logStub = sinon.stub(console, 'log')
+test('deals with file:// path', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const logStub = stub(console, 'log')
 
   const testPath = 'file:///tests/.env'
   const env = dotenv.config({ path: testPath })
 
-  ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(env.BASIC, undefined)
-  ct.equal(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
+  t.is(env.parsed.BASIC, undefined)
+  t.is(env.BASIC, undefined)
+  t.is(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
 
-  ct.end()
+  logStub.restore()
 })
 
-t.test('deals with file:// path and debug true', ct => {
-  logStub = sinon.stub(console, 'log')
+test('deals with file:// path and debug true', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const logStub = stub(console, 'log')
 
   const testPath = 'file:///tests/.env'
   const env = dotenv.config({ path: testPath, debug: true })
 
-  ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(env.BASIC, undefined)
-  ct.equal(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
+  t.is(env.parsed.BASIC, undefined)
+  t.is(env.BASIC, undefined)
+  t.is(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
 
-  ct.end()
+  logStub.restore()
 })
 
-t.test('path.relative fails somehow', ct => {
-  logStub = sinon.stub(console, 'log')
-  const pathRelativeStub = sinon.stub(path, 'relative').throws(new Error('fail'))
+test('path.relative fails somehow', function (t) {
+  delete bareEnv.BASIC // reset
+
+  const logStub = stub(console, 'log')
+  const pathRelativeStub = stub(path, 'relative').throws(new Error('fail'))
 
   const testPath = 'file:///tests/.env'
   const env = dotenv.config({ path: testPath, debug: true })
 
-  ct.equal(env.parsed.BASIC, undefined)
-  ct.equal(env.BASIC, undefined)
-  ct.equal(env.error.message, 'fail')
+  t.is(env.parsed.BASIC, undefined)
+  t.is(env.BASIC, undefined)
+  t.is(env.error.message, 'fail')
 
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
 
   pathRelativeStub.restore()
-
-  ct.end()
+  logStub.restore()
 })
 
-t.test('displays random tips from the tips array', ct => {
-  ct.plan(2)
+test('displays random tips from the tips array', function (t) {
+  delete bareEnv.BASIC // reset
 
   if (originalTTY !== undefined) {
     global.__DOTENV_TEST_TTY = originalTTY
@@ -314,7 +365,7 @@ t.test('displays random tips from the tips array', ct => {
     delete global.__DOTENV_TEST_TTY
   }
 
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
   const testPath = 'tests/.env'
 
   // Test that tips are displayed (run config multiple times to see variation)
@@ -331,7 +382,7 @@ t.test('displays random tips from the tips array', ct => {
     }
   }
 
-  ct.ok(foundTip, 'Should display a tip')
+  t.ok(foundTip, 'Should display a tip')
 
   // Test that the tip contains one of our expected tip messages
   let foundExpectedTip = false
@@ -362,12 +413,13 @@ t.test('displays random tips from the tips array', ct => {
     }
   }
 
-  ct.ok(foundExpectedTip, 'Should display one of the expected tips')
-  ct.end()
+  t.ok(foundExpectedTip, 'Should display one of the expected tips')
+
+  logStub.restore()
 })
 
-t.test('displays random tips from the tips array with fallback for isTTY false', ct => {
-  ct.plan(2)
+test('displays random tips from the tips array with fallback for isTTY false', function (t) {
+  delete bareEnv.BASIC // reset
 
   if (originalTTY !== undefined) {
     global.__DOTENV_TEST_TTY = originalTTY
@@ -375,7 +427,7 @@ t.test('displays random tips from the tips array with fallback for isTTY false',
     delete global.__DOTENV_TEST_TTY
   }
 
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
   const testPath = 'tests/.env'
 
   // Test that tips are displayed (run config multiple times to see variation)
@@ -392,7 +444,7 @@ t.test('displays random tips from the tips array with fallback for isTTY false',
     }
   }
 
-  ct.ok(foundTip, 'Should display a tip')
+  t.ok(foundTip, 'Should display a tip')
 
   // Test that the tip contains one of our expected tip messages
   let foundExpectedTip = false
@@ -420,90 +472,106 @@ t.test('displays random tips from the tips array with fallback for isTTY false',
     }
   }
 
-  ct.ok(foundExpectedTip, 'Should display one of the expected tips')
+  t.ok(foundExpectedTip, 'Should display one of the expected tips')
 
-  ct.end()
+  logStub.restore()
 })
 
-t.test('logs when no path is set', ct => {
-  ct.plan(1)
+test('logs when no path is set', function (t) {
+  delete bareEnv.BASIC // reset
 
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config()
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })
 
-t.test('does log by default', ct => {
-  ct.plan(1)
+test('does log by default', function (t) {
+  delete bareEnv.BASIC // reset
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })
 
-t.test('does not log if quiet flag passed true', ct => {
-  ct.plan(1)
+test('does not log if quiet flag passed true', function (t) {
+  delete bareEnv.BASIC // reset
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, quiet: true })
-  ct.ok(logStub.notCalled)
+  t.ok(logStub.callCount === 0)
+
+  logStub.restore()
 })
 
-t.test('does not log if env.DOTENV_CONFIG_QUIET is true', ct => {
-  ct.plan(1)
+test('does not log if env.DOTENV_CONFIG_QUIET is true', function (t) {
+  delete bareEnv.BASIC // reset
 
   bareEnv.DOTENV_CONFIG_QUIET = 'true'
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath })
-  ct.ok(logStub.notCalled)
+  t.ok(logStub.callCount === 0)
   delete bareEnv.DOTENV_CONFIG_QUIET
+
+  logStub.restore()
 })
 
-t.test('does log if quiet flag false', ct => {
-  ct.plan(1)
+test('does log if quiet flag false', function (t) {
+  delete bareEnv.BASIC // reset
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, quiet: false })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })
 
-t.test('does log if env.DOTENV_CONFIG_QUIET is false', ct => {
-  ct.plan(1)
+test('does log if env.DOTENV_CONFIG_QUIET is false', function (t) {
+  delete bareEnv.BASIC // reset
 
   bareEnv.DOTENV_CONFIG_QUIET = 'false'
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
   delete bareEnv.DOTENV_CONFIG_QUIET
+
+  logStub.restore()
 })
 
-t.test('does log if quiet flag present and undefined/null', ct => {
-  ct.plan(1)
+test('does log if quiet flag present and undefined/null', function (t) {
+  delete bareEnv.BASIC // reset
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, quiet: undefined })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })
 
-t.test('logs if debug set', ct => {
-  ct.plan(1)
+test('logs if debug set', function (t) {
+  delete bareEnv.BASIC // reset
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  const logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, debug: true })
-  ct.ok(logStub.called)
+  t.ok(logStub.called)
+
+  logStub.restore()
 })

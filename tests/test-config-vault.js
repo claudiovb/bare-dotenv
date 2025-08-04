@@ -1,7 +1,7 @@
 const fs = require('bare-fs')
 const crypto = require('bare-crypto')
-const sinon = require('sinon')
-const t = require('tap')
+const test = require('brittle')
+const { stub } = require('./test-stub')
 const env = require('bare-env')
 
 const dotenv = require('../lib/main')
@@ -10,38 +10,22 @@ const testPath = 'tests/.env'
 
 const dotenvKey = 'dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault?environment=development'
 
-let envStub
-let logStub
-
-t.beforeEach(() => {
-  env.DOTENV_KEY = ''
-  envStub = sinon.stub(env, 'DOTENV_KEY').value(dotenvKey)
-})
-
-t.afterEach(() => {
-  envStub.restore()
-
-  if (logStub) {
-    logStub.restore()
-  }
-})
-
-t.test('does log when testPath calls to .env.vault directly (interpret what the user meant)', ct => {
+test('does log when testPath calls to .env.vault directly (interpret what the user meant)', ct => {
   ct.plan(1)
 
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
   dotenv.config({ path: `${testPath}.vault` })
   ct.ok(logStub.called)
 })
 
-t.test('warns if DOTENV_KEY exists but .env.vault does not exist', ct => {
+test('warns if DOTENV_KEY exists but .env.vault does not exist', ct => {
   ct.plan(1)
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
-  const existsSync = sinon.stub(fs, 'existsSync').returns(false) // make .env.vault not exist
+  const existsSync = stub(fs, 'existsSync').returns(false) // make .env.vault not exist
   dotenv.config({ path: testPath })
   ct.ok(logStub.called)
   existsSync.restore()
@@ -49,13 +33,13 @@ t.test('warns if DOTENV_KEY exists but .env.vault does not exist', ct => {
   ct.end()
 })
 
-t.test('warns if DOTENV_KEY exists but .env.vault does not exist (set as array)', ct => {
+test('warns if DOTENV_KEY exists but .env.vault does not exist (set as array)', ct => {
   ct.plan(1)
 
   const testPath = 'tests/.env'
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
-  const existsSync = sinon.stub(fs, 'existsSync').returns(false) // make .env.vault not exist
+  const existsSync = stub(fs, 'existsSync').returns(false) // make .env.vault not exist
   dotenv.config({ path: [testPath] })
   ct.ok(logStub.called)
   existsSync.restore()
@@ -63,16 +47,16 @@ t.test('warns if DOTENV_KEY exists but .env.vault does not exist (set as array)'
   ct.end()
 })
 
-t.test('logs when testPath calls to .env.vault directly (interpret what the user meant) and debug true', ct => {
+test('logs when testPath calls to .env.vault directly (interpret what the user meant) and debug true', ct => {
   ct.plan(1)
 
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
   dotenv.config({ path: `${testPath}.vault`, debug: true })
   ct.ok(logStub.called)
 })
 
-t.test('returns parsed object', ct => {
+test('returns parsed object', ct => {
   ct.plan(1)
 
   const env = dotenv.config({ path: testPath })
@@ -81,7 +65,7 @@ t.test('returns parsed object', ct => {
   ct.end()
 })
 
-t.test('returns parsed object (set path as array)', ct => {
+test('returns parsed object (set path as array)', ct => {
   ct.plan(1)
 
   const env = dotenv.config({ path: [testPath] })
@@ -90,7 +74,7 @@ t.test('returns parsed object (set path as array)', ct => {
   ct.end()
 })
 
-t.test('returns parsed object (set path as mulit-array)', ct => {
+test('returns parsed object (set path as mulit-array)', ct => {
   ct.plan(1)
 
   const env = dotenv.config({ path: ['tests/.env.local', 'tests/.env'] })
@@ -99,7 +83,7 @@ t.test('returns parsed object (set path as mulit-array)', ct => {
   ct.end()
 })
 
-t.test('returns parsed object (set path as array with .vault extension)', ct => {
+test('returns parsed object (set path as array with .vault extension)', ct => {
   ct.plan(1)
 
   const env = dotenv.config({ path: [`${testPath}.vault`] })
@@ -108,10 +92,10 @@ t.test('returns parsed object (set path as array with .vault extension)', ct => 
   ct.end()
 })
 
-t.test('throws not found if .env.vault is empty', ct => {
+test('throws not found if .env.vault is empty', ct => {
   ct.plan(2)
 
-  const readFileSync = sinon.stub(fs, 'readFileSync').returns('') // empty file
+  const readFileSync = stub(fs, 'readFileSync').returns('') // empty file
 
   try {
     dotenv.config({ path: testPath })
@@ -124,10 +108,10 @@ t.test('throws not found if .env.vault is empty', ct => {
   ct.end()
 })
 
-t.test('throws missing data when somehow parsed badly', ct => {
+test('throws missing data when somehow parsed badly', ct => {
   ct.plan(2)
 
-  const configDotenvStub = sinon.stub(dotenv, 'configDotenv').returns({ parsed: undefined })
+  const configDotenvStub = stub(dotenv, 'configDotenv').returns({ parsed: undefined })
 
   try {
     dotenv.config({ path: testPath })
@@ -140,9 +124,9 @@ t.test('throws missing data when somehow parsed badly', ct => {
   ct.end()
 })
 
-t.test('throws error when invalid formed DOTENV_KEY', ct => {
+test('throws error when invalid formed DOTENV_KEY', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('invalid-format-non-uri-format')
+  envStub = stub(env, 'DOTENV_KEY').value('invalid-format-non-uri-format')
 
   ct.plan(2)
 
@@ -156,10 +140,10 @@ t.test('throws error when invalid formed DOTENV_KEY', ct => {
   ct.end()
 })
 
-t.test('throws error when invalid formed DOTENV_KEY that otherwise is not caught', ct => {
+test('throws error when invalid formed DOTENV_KEY that otherwise is not caught', ct => {
   ct.plan(1)
 
-  const urlStub = sinon.stub(global, 'URL')
+  const urlStub = stub(global, 'URL')
   urlStub.callsFake(() => {
     throw new Error('uncaught error')
   })
@@ -174,9 +158,9 @@ t.test('throws error when invalid formed DOTENV_KEY that otherwise is not caught
   ct.end()
 })
 
-t.test('throws error when DOTENV_KEY missing password', ct => {
+test('throws error when DOTENV_KEY missing password', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://username@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = stub(env, 'DOTENV_KEY').value('dotenv://username@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -190,9 +174,9 @@ t.test('throws error when DOTENV_KEY missing password', ct => {
   ct.end()
 })
 
-t.test('throws error when DOTENV_KEY missing environment', ct => {
+test('throws error when DOTENV_KEY missing environment', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault')
+  envStub = stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a6fef9801901c3981538563a1767c297cb8416e8a38c62fe00@dotenvx.com/vault/.env.vault')
 
   ct.plan(2)
 
@@ -206,9 +190,9 @@ t.test('throws error when DOTENV_KEY missing environment', ct => {
   ct.end()
 })
 
-t.test('when DOTENV_KEY is empty string falls back to .env file', ct => {
+test('when DOTENV_KEY is empty string falls back to .env file', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('')
+  envStub = stub(env, 'DOTENV_KEY').value('')
 
   ct.plan(1)
 
@@ -218,7 +202,7 @@ t.test('when DOTENV_KEY is empty string falls back to .env file', ct => {
   ct.end()
 })
 
-t.test('does not write over keys already in env by default', ct => {
+test('does not write over keys already in env by default', ct => {
   ct.plan(2)
 
   const existing = 'bar'
@@ -230,7 +214,7 @@ t.test('does not write over keys already in env by default', ct => {
   ct.equal(env.ALPHA, 'bar')
 })
 
-t.test('does write over keys already in env if override turned on', ct => {
+test('does write over keys already in env if override turned on', ct => {
   ct.plan(2)
 
   const existing = 'bar'
@@ -242,9 +226,9 @@ t.test('does write over keys already in env if override turned on', ct => {
   ct.equal(env.ALPHA, 'zeta')
 })
 
-t.test('when DOTENV_KEY is passed as an option it successfully decrypts and injects', ct => {
+test('when DOTENV_KEY is passed as an option it successfully decrypts and injects', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('')
+  envStub = stub(env, 'DOTENV_KEY').value('')
 
   ct.plan(2)
 
@@ -256,12 +240,12 @@ t.test('when DOTENV_KEY is passed as an option it successfully decrypts and inje
   ct.end()
 })
 
-t.test('can write to a different object rather than env', ct => {
+test('can write to a different object rather than env', ct => {
   ct.plan(3)
 
   env.ALPHA = 'other' // reset env
 
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
   const myObject = {}
 
@@ -271,29 +255,29 @@ t.test('can write to a different object rather than env', ct => {
   ct.equal(myObject.ALPHA, 'zeta')
 })
 
-t.test('logs when debug and override are turned on', ct => {
+test('logs when debug and override are turned on', ct => {
   ct.plan(1)
 
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, override: true, debug: true })
 
   ct.ok(logStub.called)
 })
 
-t.test('logs when debug is on and override is false', ct => {
+test('logs when debug is on and override is false', ct => {
   ct.plan(1)
 
-  logStub = sinon.stub(console, 'log')
+  logStub = stub(console, 'log')
 
   dotenv.config({ path: testPath, override: false, debug: true })
 
   ct.ok(logStub.called)
 })
 
-t.test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
+test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = stub(env, 'DOTENV_KEY').value('dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -307,9 +291,9 @@ t.test('raises an INVALID_DOTENV_KEY if key RangeError', ct => {
   ct.end()
 })
 
-t.test('raises an DECRYPTION_FAILED if key fails to decrypt payload', ct => {
+test('raises an DECRYPTION_FAILED if key fails to decrypt payload', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -323,9 +307,9 @@ t.test('raises an DECRYPTION_FAILED if key fails to decrypt payload', ct => {
   ct.end()
 })
 
-t.test('raises an DECRYPTION_FAILED if both (comma separated) keys fail to decrypt', ct => {
+test('raises an DECRYPTION_FAILED if both (comma separated) keys fail to decrypt', ct => {
   envStub.restore()
-  envStub = sinon.stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development,dotenv://:key_c04959b64473e43dd60c56a536ef8481388528b16759736d89515c25eec69247@dotenvx.com/vault/.env.vault?environment=development')
+  envStub = stub(env, 'DOTENV_KEY').value('dotenv://:key_2c4d267b8c3865f921311612e69273666cc76c008acb577d3e22bc3046fba386@dotenvx.com/vault/.env.vault?environment=development,dotenv://:key_c04959b64473e43dd60c56a536ef8481388528b16759736d89515c25eec69247@dotenvx.com/vault/.env.vault?environment=development')
 
   ct.plan(2)
 
@@ -339,10 +323,10 @@ t.test('raises an DECRYPTION_FAILED if both (comma separated) keys fail to decry
   ct.end()
 })
 
-t.test('raises error if some other uncaught decryption error', ct => {
+test('raises error if some other uncaught decryption error', ct => {
   ct.plan(1)
 
-  const decipherStub = sinon.stub(crypto, 'createDecipheriv')
+  const decipherStub = stub(crypto, 'createDecipheriv')
   decipherStub.callsFake(() => {
     throw new Error('uncaught error')
   })
@@ -358,7 +342,7 @@ t.test('raises error if some other uncaught decryption error', ct => {
   ct.end()
 })
 
-t.test('_parseVault when empty args', ct => {
+test('_parseVault when empty args', ct => {
   ct.plan(1)
 
   try {
