@@ -24,7 +24,7 @@ test('env options', function (t) {
     delete env[envVar]
     env[envVar] = tmpVal
 
-    t.alike(options(), expect)
+    t.is(options(), expect)
 
     delete env[envVar]
   }
@@ -36,7 +36,7 @@ test('env options', function (t) {
   delete env.DOTENV_CONFIG_DEBUG
   delete env.DOTENV_CONFIG_OVERRIDE
 
-  t.alike(options(), {})
+  t.is(options(), {})
 
   // sets encoding option
   testOption('DOTENV_CONFIG_ENCODING', 'latin1', { encoding: 'latin1' })

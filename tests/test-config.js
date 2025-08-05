@@ -18,7 +18,7 @@ test('takes string for path option', function (t) {
   const env = dotenv.config({ path: testPath })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, 'basic')
+  t.is(bareEnv.BASIC, 'basic')
 })
 
 test('takes array for path option', function (t) {
@@ -28,7 +28,7 @@ test('takes array for path option', function (t) {
   const env = dotenv.config({ path: testPath })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, 'basic')
+  t.is(bareEnv.BASIC, 'basic')
 })
 
 test('takes two or more files in the array for path option', function (t) {
@@ -38,7 +38,7 @@ test('takes two or more files in the array for path option', function (t) {
   const env = dotenv.config({ path: testPath })
 
   t.is(env.parsed.BASIC, 'local_basic')
-  t.is(env.BASIC, 'local_basic')
+  t.is(bareEnv.BASIC, 'local_basic')
 })
 
 test('sets values from both .env.local and .env. first file key wins.', function (t) {
@@ -50,15 +50,15 @@ test('sets values from both .env.local and .env. first file key wins.', function
 
   // in both files - first file wins (.env.local)
   t.is(env.parsed.BASIC, 'local_basic')
-  t.is(env.BASIC, 'local_basic')
+  t.is(bareEnv.BASIC, 'local_basic')
 
   // in .env.local only
   t.is(env.parsed.LOCAL, 'local')
-  t.is(env.LOCAL, 'local')
+  t.is(bareEnv.LOCAL, 'local')
 
   // in .env only
   t.is(env.parsed.SINGLE_QUOTES, 'single_quotes')
-  t.is(env.SINGLE_QUOTES, 'single_quotes')
+  t.is(bareEnv.SINGLE_QUOTES, 'single_quotes')
 })
 
 test('sets values from both .env.local and .env. but none is used as value existed in env.', function (t) {
@@ -72,7 +72,7 @@ test('sets values from both .env.local and .env. but none is used as value exist
 
   // does not override env
   t.is(env.parsed.BASIC, 'local_basic')
-  t.is(env.BASIC, 'existing')
+  t.is(bareEnv.BASIC, 'existing')
 
   // restore
   delete bareEnv.BASIC
@@ -90,7 +90,7 @@ test('takes URL for path option', function (t) {
   const env = dotenv.config({ path: fileUrl })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, 'basic')
+  t.is(bareEnv.BASIC, 'basic')
 })
 
 test('takes option for path along with home directory char ~', function (t) {
@@ -176,7 +176,7 @@ test('does write over keys already in env if override turned on', function (t) {
   const env = dotenv.config({ path: testPath, override: true })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, 'basic')
+  t.is(bareEnv.BASIC, 'basic')
 
   // restore
   delete bareEnv.BASIC
@@ -195,7 +195,7 @@ test('does not write over keys already in env if the key has a falsy value', fun
   const env = dotenv.config({ path: testPath })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, '')
+  t.is(bareEnv.BASIC, '')
 
   // restore
   delete bareEnv.BASIC
@@ -214,7 +214,7 @@ test('does write over keys already in env if the key has a falsy value but overr
   const env = dotenv.config({ path: testPath, override: true })
 
   t.is(env.parsed.BASIC, 'basic')
-  t.is(env.BASIC, 'basic')
+  t.is(bareEnv.BASIC, 'basic')
 
   // restore
   delete bareEnv.BASIC
@@ -235,7 +235,7 @@ test('can write to a different object rather than env', function (t) {
 
   t.is(env.parsed.BASIC, 'basic')
   console.log('logging', env.BASIC)
-  t.is(env.BASIC, 'other')
+  t.is(bareEnv.BASIC, 'other')
   t.is(myObject.BASIC, 'basic')
 
   // restore
@@ -252,7 +252,7 @@ test('returns parsed object', function (t) {
   const testPath = 'tests/.env'
   const env = dotenv.config({ path: testPath })
 
-  t.absent(env.error)
+  t.absent(bareEnv.error)
   t.is(env.parsed.BASIC, 'basic')
 
   // restore
@@ -263,8 +263,6 @@ test('returns parsed object', function (t) {
 })
 
 test('returns any errors thrown from reading file or parsing', function (t) {
-  delete bareEnv.BASIC // reset
-
   const readFileSyncStub = stub(fs, 'readFileSync').returns('test=foo')
 
   readFileSyncStub.throws()
@@ -304,15 +302,13 @@ test('logs any errors parsing when in debug and override mode', function (t) {
 })
 
 test('deals with file:// path', function (t) {
-  delete bareEnv.BASIC // reset
-
   const logStub = stub(console, 'log')
 
   const testPath = 'file:///tests/.env'
   const env = dotenv.config({ path: testPath })
 
   t.is(env.parsed.BASIC, undefined)
-  t.is(env.BASIC, undefined)
+  t.is(bareEnv.BASIC, undefined)
   t.is(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
   t.ok(logStub.called)
@@ -321,15 +317,13 @@ test('deals with file:// path', function (t) {
 })
 
 test('deals with file:// path and debug true', function (t) {
-  delete bareEnv.BASIC // reset
-
   const logStub = stub(console, 'log')
 
   const testPath = 'file:///tests/.env'
   const env = dotenv.config({ path: testPath, debug: true })
 
   t.is(env.parsed.BASIC, undefined)
-  t.is(env.BASIC, undefined)
+  t.is(bareEnv.BASIC, undefined)
   t.is(env.error.message, "ENOENT: no such file or directory, open 'file:///tests/.env'")
 
   t.ok(logStub.called)
@@ -338,8 +332,6 @@ test('deals with file:// path and debug true', function (t) {
 })
 
 test('path.relative fails somehow', function (t) {
-  delete bareEnv.BASIC // reset
-
   const logStub = stub(console, 'log')
   const pathRelativeStub = stub(path, 'relative').throws(new Error('fail'))
 
@@ -347,7 +339,7 @@ test('path.relative fails somehow', function (t) {
   const env = dotenv.config({ path: testPath, debug: true })
 
   t.is(env.parsed.BASIC, undefined)
-  t.is(env.BASIC, undefined)
+  t.is(bareEnv.BASIC, undefined)
   t.is(env.error.message, 'fail')
 
   t.ok(logStub.called)
@@ -357,8 +349,6 @@ test('path.relative fails somehow', function (t) {
 })
 
 test('displays random tips from the tips array', function (t) {
-  delete bareEnv.BASIC // reset
-
   if (originalTTY !== undefined) {
     global.__DOTENV_TEST_TTY = originalTTY
   } else {
@@ -419,8 +409,6 @@ test('displays random tips from the tips array', function (t) {
 })
 
 test('displays random tips from the tips array with fallback for isTTY false', function (t) {
-  delete bareEnv.BASIC // reset
-
   if (originalTTY !== undefined) {
     global.__DOTENV_TEST_TTY = originalTTY
   } else {
@@ -478,8 +466,6 @@ test('displays random tips from the tips array with fallback for isTTY false', f
 })
 
 test('logs when no path is set', function (t) {
-  delete bareEnv.BASIC // reset
-
   const logStub = stub(console, 'log')
 
   dotenv.config()
@@ -501,8 +487,6 @@ test('does log by default', function (t) {
 })
 
 test('does not log if quiet flag passed true', function (t) {
-  delete bareEnv.BASIC // reset
-
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
 
@@ -513,8 +497,6 @@ test('does not log if quiet flag passed true', function (t) {
 })
 
 test('does not log if env.DOTENV_CONFIG_QUIET is true', function (t) {
-  delete bareEnv.BASIC // reset
-
   bareEnv.DOTENV_CONFIG_QUIET = 'true'
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
@@ -527,8 +509,6 @@ test('does not log if env.DOTENV_CONFIG_QUIET is true', function (t) {
 })
 
 test('does log if quiet flag false', function (t) {
-  delete bareEnv.BASIC // reset
-
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
 
@@ -539,8 +519,6 @@ test('does log if quiet flag false', function (t) {
 })
 
 test('does log if env.DOTENV_CONFIG_QUIET is false', function (t) {
-  delete bareEnv.BASIC // reset
-
   bareEnv.DOTENV_CONFIG_QUIET = 'false'
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
@@ -553,8 +531,6 @@ test('does log if env.DOTENV_CONFIG_QUIET is false', function (t) {
 })
 
 test('does log if quiet flag present and undefined/null', function (t) {
-  delete bareEnv.BASIC // reset
-
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
 
@@ -565,8 +541,6 @@ test('does log if quiet flag present and undefined/null', function (t) {
 })
 
 test('logs if debug set', function (t) {
-  delete bareEnv.BASIC // reset
-
   const testPath = 'tests/.env'
   const logStub = stub(console, 'log')
 
