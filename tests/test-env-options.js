@@ -17,15 +17,18 @@ test('env options', function (t) {
   // get fresh object for each test
   function options () {
     decache('../lib/env-options.js')
-    return require('../lib/env-options')
+    const getOptions = require('../lib/env-options')
+    return getOptions()
   }
 
   function testOption (envVar, tmpVal, expect) {
+    // Delete first, then set (this triggers the Proxy's deleteProperty and set traps)
     delete env[envVar]
     env[envVar] = tmpVal
 
-    t.is(options(), expect)
+    t.alike(options(), expect)
 
+    // Clean up
     delete env[envVar]
   }
 
@@ -36,7 +39,7 @@ test('env options', function (t) {
   delete env.DOTENV_CONFIG_DEBUG
   delete env.DOTENV_CONFIG_OVERRIDE
 
-  t.is(options(), {})
+  t.alike(options(), {})
 
   // sets encoding option
   testOption('DOTENV_CONFIG_ENCODING', 'latin1', { encoding: 'latin1' })
@@ -57,10 +60,10 @@ test('env options', function (t) {
   testOption('DOTENV_CONFIG_DOTENV_KEY', 'dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development', { DOTENV_KEY: 'dotenv://:key_ddcaa26504cd70a@dotenvx.com/vault/.env.vault?environment=development' })
 
   // restore existing env
-  process.env.DOTENV_CONFIG_ENCODING = e
-  process.env.DOTENV_CONFIG_PATH = p
-  process.env.DOTENV_CONFIG_QUIET = q
-  process.env.DOTENV_CONFIG_DEBUG = d
-  process.env.DOTENV_CONFIG_OVERRIDE = o
-  process.env.DOTENV_CONFIG_DOTENV_KEY = dk
+  if (e !== undefined) env.DOTENV_CONFIG_ENCODING = e
+  if (p !== undefined) env.DOTENV_CONFIG_PATH = p
+  if (q !== undefined) env.DOTENV_CONFIG_QUIET = q
+  if (d !== undefined) env.DOTENV_CONFIG_DEBUG = d
+  if (o !== undefined) env.DOTENV_CONFIG_OVERRIDE = o
+  if (dk !== undefined) env.DOTENV_CONFIG_DOTENV_KEY = dk
 })
