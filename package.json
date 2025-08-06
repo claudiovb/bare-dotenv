@@ -1,7 +1,8 @@
 {
   "name": "bare-dotenv",
-  "version": "17.2.1",
+  "version": "1.0.0",
   "description": "Loads environment variables from .env file",
+  "author": "claudiovb <https://github.com/claudiovb>",
   "main": "lib/main.js",
   "types": "lib/main.d.ts",
   "exports": {
